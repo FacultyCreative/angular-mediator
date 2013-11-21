@@ -6,7 +6,7 @@ Single Responsibility Principle tightly, and removing (ideally all) dependencies
 
 Instead of modules or classes communicating with one another directly, or maintaining
 a list of subscribers as in the Observer pattern, in the Mediator pattern modules
-broadcast events (via $scope#$broadcast and $scope#emit), and only the Mediator listens.
+broadcast events (via `$scope#$broadcast` and `$scope#emit`), and only the Mediator listens.
 
 The Mediator encapsulates application-specific logic. It knows how to respond to
 events within a given application by calling the APIs of the other modules. It
@@ -21,7 +21,7 @@ provides users with many types of interesting updates in a Growl-like fashion.
  
 An Order could be responsible for instantiating a new invoice, sending off 
 an email and notifying the user of success or failure, or the Email class could have a 
-very specific Email.sendShippingLabelAndNotify() function. But both of these approaches 
+very specific `Email.sendShippingLabelAndNotify()` function. But both of these approaches 
 require our classes to know too much about the functionality of other classes. They 
 tightly couple dependencies, and render us unable to drop our classes into new projects 
 with few or no changes.
@@ -92,11 +92,11 @@ Mediator.listen(/success$/).act(notifier.notify(event, payload));
 Mediator.listen(/^user/).act(currentUser.update(event, payload));
 ```
 #### Wildcard & Globstar Matching
-Listen also accepts string names featuring a wildcard matcher (*) and globstar matcher (**).
+Listen also accepts string names featuring a wildcard matcher (`*`) and globstar matcher (`**`).
 
 The wildcard matcher matches any string not split by a separator. The list of separators
-is colon (:), backslash (/), period (.), question mark (?), underscore (_), 
-ampersand (&), and semi-colon (;)
+is colon (`:`), backslash (`/`), period (`.`), question mark (`?`), underscore (`_`), 
+ampersand (`&`), and semi-colon (`;`)
 ```
 Mediator.listen('*:success').act(notifier.notify(event, payload));
 ```
