@@ -1,5 +1,5 @@
 {
-  "name": "Mediator",
+  "name": "Mediator.js",
   "version": "0.0.1",
   "dependencies": {
     "bower": "~1.2.6",

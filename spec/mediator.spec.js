@@ -1,10 +1,10 @@
-describe('Module: lsMediator', function() {
+describe('Module: Mediator', function() {
 
     // ------------------------------
     // Variables 
     // ------------------------------
-    var lsMediator,
-        lsMediatorProviderCache,
+    var Mediator,
+        MediatorProviderCache,
         rootScope,
         provider,
         service,
@@ -14,23 +14,23 @@ describe('Module: lsMediator', function() {
 
 
     // load module we are testing
-    beforeEach(module('lsMediator'));
+    beforeEach(module('Mediator'));
 
     // inject providers
-    beforeEach(module(function(lsMediatorProvider) {
+    beforeEach(module(function(MediatorProvider) {
 
         // cache the provider, so we can access
         // it later within our tests. 
-        lsMediatorProviderCache = lsMediatorProvider;
+        MediatorProviderCache = MediatorProvider;
 
     }));
 
     // inject services
-    beforeEach(inject(function(_$rootScope_, _lsMediator_) {
+    beforeEach(inject(function(_$rootScope_, _Mediator_) {
 
         // get injected services
         $rootScope = _$rootScope_;
-        lsMediator = _lsMediator_;
+        Mediator = _Mediator_;
 
         // create a new scope, which later we assign as the scope
         // for our authController.
@@ -44,31 +44,31 @@ describe('Module: lsMediator', function() {
 
     }));
 
-    describe('lsMediator Provider', function() {
+    describe('Mediator Provider', function() {
 
         it('provides a wildcard matcher', function() {
-            lsMediator.listen('*').act(mock.getTest(1));
+            Mediator.listen('*').act(mock.getTest(1));
             $scope.$broadcast('event:login:success');
             expect(mock.respond).toHaveBeenCalledWith(mock.testResult(1));
             expect(mock.respond).not.toHaveBeenCalledWith(mock.testResult(2));
             mock.respond.reset(); // reset spy
-            lsMediator.listen('*').act(mock.getTest(2));
+            Mediator.listen('*').act(mock.getTest(2));
             $scope.$emit('event:login:success');
             expect(mock.respond).toHaveBeenCalledWith(mock.testResult(1));
             expect(mock.respond).toHaveBeenCalledWith(mock.testResult(2));
 
-            lsMediator.listen('event:login:success');
+            Mediator.listen('event:login:success');
 
-            lsMediator.listen('*').act(mock.getTest(1));
-            lsMediator.listen('*:login:success').act(mock.getTest(2));
-            lsMediator.listen('**:login:success').act(mock.getTest(3));
-            lsMediator.listen('**:success').act(mock.getTest(4));
-            lsMediator.listen('*:*:success').act(mock.getTest(5));
-            lsMediator.listen('event:*:success').act(mock.getTest(6));
-            lsMediator.listen('event:*').act(mock.getTest(7));
+            Mediator.listen('*').act(mock.getTest(1));
+            Mediator.listen('*:login:success').act(mock.getTest(2));
+            Mediator.listen('**:login:success').act(mock.getTest(3));
+            Mediator.listen('**:success').act(mock.getTest(4));
+            Mediator.listen('*:*:success').act(mock.getTest(5));
+            Mediator.listen('event:*:success').act(mock.getTest(6));
+            Mediator.listen('event:*').act(mock.getTest(7));
 
-            lsMediator.listen('event:*:failure').act(mock.getTest(11));
-            lsMediator.listen('**:failure').act(mock.getTest(12));
+            Mediator.listen('event:*:failure').act(mock.getTest(11));
+            Mediator.listen('**:failure').act(mock.getTest(12));
 
             $scope.$emit('event:login:success');
 
@@ -85,8 +85,8 @@ describe('Module: lsMediator', function() {
         });
 
         it('matches a single-level deep', function() {
-            lsMediator.listen('*:login:success').act(mock.getTest(1));
-            lsMediator.listen('*:somethingelse:success').act(mock.getTest(2));
+            Mediator.listen('*:login:success').act(mock.getTest(1));
+            Mediator.listen('*:somethingelse:success').act(mock.getTest(2));
             $scope.$broadcast('event:login:success');
             expect(mock.respond).toHaveBeenCalledWith(mock.testResult(1));
             expect(mock.respond).not.toHaveBeenCalledWith(mock.testResult(2));
@@ -97,8 +97,8 @@ describe('Module: lsMediator', function() {
         });
 
         it('matches infinitely deep', function() {
-            lsMediator.listen('**:success').act(mock.getTest(1));
-            lsMediator.listen('**:error').act(mock.getTest(2));
+            Mediator.listen('**:success').act(mock.getTest(1));
+            Mediator.listen('**:error').act(mock.getTest(2));
             $scope.$broadcast('anything:goes:here:success');
             expect(mock.respond).toHaveBeenCalledWith(mock.testResult(1));
             expect(mock.respond).not.toHaveBeenCalledWith(mock.testResult(2));
@@ -109,8 +109,8 @@ describe('Module: lsMediator', function() {
         });
 
         it('accepts regular expressions', function() {
-            lsMediator.listen(/:success$/).act(mock.getTest(1));
-            lsMediator.listen(/:error$/).act(mock.getTest(2));
+            Mediator.listen(/:success$/).act(mock.getTest(1));
+            Mediator.listen(/:error$/).act(mock.getTest(2));
             $scope.$broadcast('user:login:success');
             expect(mock.respond).toHaveBeenCalledWith(mock.testResult(1));
             expect(mock.respond).not.toHaveBeenCalledWith(mock.testResult(2));
@@ -133,7 +133,7 @@ describe('Module: lsMediator', function() {
             $nestedScope.$on('some:cool:event', function(event) {
                 eventName = event.name;
             });
-            lsMediator.listen(/event$/).act(mock.getTest(1));
+            Mediator.listen(/event$/).act(mock.getTest(1));
 
             $rootScope.$broadcast('some:cool:event');
             expect(mock.respond).toHaveBeenCalledWith(mock.testResult(1));
@@ -142,7 +142,7 @@ describe('Module: lsMediator', function() {
             $nestedScope.$on('another:great:event', function(event) {
                 eventName = event.name;
             });
-            lsMediator.listen(/^another/).act(mock.getTest(2));
+            Mediator.listen(/^another/).act(mock.getTest(2));
             $deeplyNestedScope = $nestedScope.$new();
 
             $deeplyNestedScope.$emit('another:great:event');
@@ -153,10 +153,10 @@ describe('Module: lsMediator', function() {
         it('should provide a method to listen for events and run actions when those events happen', function() {
 
             //registers an event for listening
-            lsMediator.listen('event:login:success');
+            Mediator.listen('event:login:success');
 
-            lsMediator.listen('event:login:success').act(mock.getTest(1));
-            lsMediator.listen('event:login:failure').act(mock.getTest(2));
+            Mediator.listen('event:login:success').act(mock.getTest(1));
+            Mediator.listen('event:login:failure').act(mock.getTest(2));
 
             $scope.$emit('event:login:success');
 
@@ -167,11 +167,11 @@ describe('Module: lsMediator', function() {
 
         it('should ignore [***] and greater wild-card matching patterns', function() {
 
-            lsMediator.listen('event:login:success');
+            Mediator.listen('event:login:success');
 
-            lsMediator.listen('***').act(mock.getTest(1));
-            lsMediator.listen('***:login:success').act(mock.getTest(2));
-            lsMediator.listen('*********').act(mock.getTest(3));
+            Mediator.listen('***').act(mock.getTest(1));
+            Mediator.listen('***:login:success').act(mock.getTest(2));
+            Mediator.listen('*********').act(mock.getTest(3));
 
             $scope.$emit('event:login:success');
 
@@ -183,12 +183,12 @@ describe('Module: lsMediator', function() {
 
         it('should support registering multiple actions on the same listener', function() {
 
-            lsMediator.listen('event:login:success');
+            Mediator.listen('event:login:success');
 
-            lsMediator.listen('event:login:success').act(mock.getTest(1));
-            lsMediator.listen('event:login:success').act(mock.getTest(2));
-            lsMediator.listen('event:login:success').act(mock.getTest(3));
-            lsMediator.listen('event:login:success').act(mock.getTest(4));
+            Mediator.listen('event:login:success').act(mock.getTest(1));
+            Mediator.listen('event:login:success').act(mock.getTest(2));
+            Mediator.listen('event:login:success').act(mock.getTest(3));
+            Mediator.listen('event:login:success').act(mock.getTest(4));
 
             $scope.$emit('event:login:success');
 
@@ -201,8 +201,8 @@ describe('Module: lsMediator', function() {
 
         it('should provide actor with the original event object and payload', function() {
 
-            lsMediator.listen('event:login:success').act(mock.getPayloadTest());
-            lsMediator.listen('event:login:failure').act(mock.getPayloadTest());
+            Mediator.listen('event:login:success').act(mock.getPayloadTest());
+            Mediator.listen('event:login:failure').act(mock.getPayloadTest());
 
             $scope.$emit('event:login:success', 'PAYLOAD');
             $scope.$emit('event:login:success', {});
@@ -225,7 +225,7 @@ describe('Module: lsMediator', function() {
         // we cant test against stupidity :)
         it('should not create an infinite loop if callback contains a $broadcast()!', function() {
 
-            lsMediator.listen('event:login:success').act(function(event, payload) {
+            Mediator.listen('event:login:success').act(function(event, payload) {
                 $rootScope.$broadcast('TEST_SUCCESS_FANCY');
             });
 
@@ -237,9 +237,9 @@ describe('Module: lsMediator', function() {
 
         it('should allow chaining of .listen().act().act()', function() {
 
-            lsMediator.listen('event:login:success');
+            Mediator.listen('event:login:success');
 
-            lsMediator
+            Mediator
                 .listen('event:login:success')
                 .act(mock.getTest(1))
                 .act(mock.getTest(2))
@@ -257,10 +257,10 @@ describe('Module: lsMediator', function() {
 
         it('should provide listen, unlisten, and act as public api', function() {
 
-            expect(Object.keys(lsMediator).length).toEqual(3);
-            expect(lsMediator.listen).toBeDefined();
-            expect(lsMediator.unlisten).toBeDefined();
-            expect(lsMediator.act).toBeDefined();
+            expect(Object.keys(Mediator).length).toEqual(3);
+            expect(Mediator.listen).toBeDefined();
+            expect(Mediator.unlisten).toBeDefined();
+            expect(Mediator.act).toBeDefined();
 
         });
 
@@ -268,8 +268,8 @@ describe('Module: lsMediator', function() {
         // and more of a bug fix 
         it('will not duplicate listeners when using wild cards ', function() {
 
-            lsMediator.listen('event:login:success').act(mock.getTest(1));
-            lsMediator.listen('*').act(mock.getTest(2));
+            Mediator.listen('event:login:success').act(mock.getTest(1));
+            Mediator.listen('*').act(mock.getTest(2));
 
             $rootScope.$broadcast('event:login:success');
 

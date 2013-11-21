@@ -118,8 +118,8 @@
  */
 
 angular
-    .module('lsMediator', [])
-    .provider('lsMediator', function() {
+    .module('Mediator', [])
+    .provider('Mediator', function() {
 
         var listeners = [];
         var actors = [];
