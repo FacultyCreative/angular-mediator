@@ -1,4 +1,4 @@
-Mediator.js
+Angular-Mediator
 ===========
 
 The Mediator pattern maximizes code reuse by allowing our classes to follow the
