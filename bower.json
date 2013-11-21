@@ -2,8 +2,8 @@
   "name": "Mediator",
   "version": "0.0.1",
   "authors": [
-    "Brett Shollenberger <brett@facultycreative.com>",
-    "Matt Miller <matt@facultycreative.com>"
+    "Matt Miller <matt@facultycreative.com>",
+    "Brett Shollenberger <brett@facultycreative.com>"
   ],
   "description": "Mediator pattern machine featuring wildcard matching, globstar matching, and regular expression pattern matching",
   "main": "scripts/mediator.js",
@@ -23,5 +23,13 @@
     "bower_components",
     "test",
     "tests"
-  ]
+  ],
+  "dependencies": {
+    "jquery": "~1.9.1",
+    "lodash": "latest",
+    "angular": "1.2.1"
+  },
+  "devDependencies": {
+    "angular-mocks": "1.2.1"
+  }
 }
