@@ -86,16 +86,17 @@ The mediator provides a few simple methods for registering events & actions.
 ```
 Mediator.listen(eventName).act(function(event, payload) {});
 ```
- Listen accepts regular expressions:
+#### Regular Expression Matching
 ```
 Mediator.listen(/success$/).act(notifier.notify(event, payload));
 Mediator.listen(/^user/).act(currentUser.update(event, payload));
 ```
- Listen also accepts string names featuring a wildcard matcher (*) and globstar matcher (**).
+#### Wildcard & Globstar Matching
+Listen also accepts string names featuring a wildcard matcher (*) and globstar matcher (**).
 
- The wildcard matcher matches any string not split by a separator. The list of separators
- is colon (:), backslash (/), period (.), question mark (?), underscore (_), 
- ampersand (&), and semi-colon (;)
+The wildcard matcher matches any string not split by a separator. The list of separators
+is colon (:), backslash (/), period (.), question mark (?), underscore (_), 
+ampersand (&), and semi-colon (;)
 ```
 Mediator.listen('*:success').act(notifier.notify(event, payload));
 ```
