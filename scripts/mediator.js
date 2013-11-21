@@ -118,286 +118,63 @@
  */
 
 angular
-    .module('Mediator', [])
-    .provider('Mediator', function() {
-
-        var listeners = [];
-        var actors = [];
-
-        var _event, _payload, _eventName;
-
-        /**
-         * --------------------------------------------
-         * Private log function. These module is rather complex
-         * and we want to leave the logs in place for reference
-         * --------------------------------------------
-         *
-         */
-
-        var $log = function() {
-
-            var args = [];
-
-            // arguments will be be an object, lets make them an array
-            for (var index in arguments) {
-                args.push(arguments[index]);
-            }
-
-            //console.log(args);
-        };
-
-
-        /**
-         * --------------------------------------------
-         * match eventName against a pattern that MIGHT contain a wild-card
-         * --------------------------------------------
-         *
-         * @note wild-cards come in 2 flavors
-         *
-         * 1. **:event = this will match **:event at any point in the string.
-         *    @example **:event MATCHES some:crazy:event AND some:event
-         *
-         * 2. *:event = will match from beginning of string
-         *    @example *:event MATCHES some:*:event NOT some:long:event
-         *
-         * @note this pattern is borrowed heavily from angular's route matching
-         *
-         */
-
-        function wildcardMatch(eventName, watchPattern) {
-
-            if (watchPattern.indexOf('/') == 0) {
-                watchPattern = watchPattern.replace(/\//g, '');
-                var reg = new RegExp(watchPattern);
-            } else {
-                // return if no wild-card pattern
-                if (watchPattern.indexOf('*') === -1) return false;
-
-                // we don't support *** wildcards
-                if (watchPattern.indexOf('***') !== -1) return false;
-
-                // we replace our * wild-card with a regular expression which
-                // matches the beginning of a string, stopping at the next
-                // character from set [: / ? & ;]
-                //
-                // ^ matches at the beginning of the string
-                var matcher = watchPattern
-                // replace double wildcard with .*
-                .replace(/\*\*/g, '.*')
-                // replace any * instance with pattern that will search until
-                // next [: / ? & ;] item
-                .replace(/\*/g, '[^:/.?_&;]*')
-                // finally replace any . with .* with allows for ** to match
-                // to beginning of string.
-                .replace(/\./, '.*');
-
-                // look for matcher from beginning of string
-                var reg = new RegExp('^' + matcher);
-            }
-
-            var isMatch = !! reg.exec(eventName);
-
-            $log('matcher ', matcher, 'reg', reg, 'eventName ', eventName, 'isMatch ', isMatch);
-
-            return isMatch;
-
-        }
-
-
-        /**
-         * --------------------------------------------
-         * Gets all registered actors for an event.
-         * --------------------------------------------
-         *
-         */
-
-        function getAllActorsForEvent(eventName) {
-
-            // get obvious matches
-            var eventActors = actors[eventName] || [];
-
-            // check for wild-card matches
-            for (var index in actors) {
-                if (wildcardMatch(eventName, index)) {
-                    eventActors = eventActors.concat(actors[index]);
-                }
-            }
-
-            return eventActors;
-
-        }
-
-
-        /**
-         * --------------------------------------------
-         * Call an array of functions
-         * @note this is no longer recursive as that was required due to
-         *       error where events were being piling up because
-         *       when we did our wild-card match we pushed array inside of array
-         *       instead of merging arrays together.
-         * --------------------------------------------
-         *
-         */
-
-        function callActors(fnArray) {
-
-            for (var index in fnArray) {
-
-                var fnOrArray = fnArray[index];
-
-                if (typeof fnOrArray === 'function') fnOrArray(_event, _payload);
-
-            }
-
-        }
-
-
-        /**
-         * --------------------------------------------
-         * $get method will return public interface
-         * --------------------------------------------
-         *
-         * @note functions defined on this will be available in
-         * the app config block
-         *
-         */
+    .module('lsMediator', [])
+    .provider('lsMediator', function() {
 
         this.$get = [
             '$rootScope',
             function($rootScope) {
 
+                var listeners = [];
+                var actors = {};
+                var _eventName;
                 var $broadcast = angular.copy($rootScope.$broadcast);
                 var $emit      = angular.copy($rootScope.$emit);
 
+                function addListener(eventName) {
+                    if (eventName.constructor == String) eventName = wildcardify(eventName);
+                    if (eventName.constructor == RegExp) listeners.push(eventName);
+                    _eventName = eventName;
+                }
+
+                function removeListener(eventName) {
+                    if (eventName.constructor == String) eventName = wildcardify(eventName);
+                    listeners = pk.withoutRegex(listeners, eventName);
+                }
+
+                function addActor(eventName, fn) {
+                    if (!actors[eventName]) actors[eventName] = [];
+                    actors[eventName].push(fn);
+                }
+
                 $rootScope.$emit = function(name, args) {
-                    PublicInterface.listen(name);
+                    callWildcards(name, args);
                     return $emit.call(this, name, args);
                 };
 
                 $rootScope.$broadcast = function(name, args) {
-                    PublicInterface.listen(name);
+                    callWildcards(name, args);
                     return $broadcast.call($rootScope, name, args);
                 };
 
-                /**
-                 * --------------------------------------------
-                 * generic callback for broadcasts
-                 * ANY events we're registered with .listen()
-                 * will run this callback
-                 * --------------------------------------------
-                 *
-                 */
-
-                function eventCb(event, payload) {
-
-                    $log('Event occured: ' + event.name);
-
-                    // we later passt
-                    _event = event;
-                    _payload = payload;
-
-                    var eventActors = getAllActorsForEvent(event.name);
-
-                    $log('we need to act on ' + eventActors.length + ' matched listeners.');
-                    // @note Each listener will contain an array of functions to call
-
-                    // should never happened, but just in case
-                    if (!eventActors) return;
-
-                    callActors(eventActors);
-
+                function callWildcards(name, args) {
+                    _.each(listeners, function(listener) {
+                        if (name.match(listener)) _.each(actors[listener], function(actor) { actor(name, args); });
+                    });
                 }
 
-
-                /**
-                 * --------------------------------------------
-                 * adds function to listener array
-                 * also registers this event with the broadcast event
-                 * and stores a de-register function
-                 * --------------------------------------------
-                 *
-                 */
-
-                function addListener(eventName) {
-
-                    // get current listeners for this event name
-                    var existingListener = listeners[eventName];
-
-                    // we only need to register an event 1 time, so return
-                    // if the event is already being listened for
-                    if (existingListener) return;
-
-                    // add $rootScope on listener, 
-                    // and register that listener function in our listeners
-                    // array which will allow us to de-register this event if we need
-                    listeners[eventName] = $rootScope.$on(eventName, eventCb);
-
-                    //$log('Remove functions for ' + eventName + ' are now', listeners[eventName]);
-                    $log('Added listener for ' + eventName);
-
+                function wildcardify(watchPattern) {
+                    if (watchPattern.match(/\*{3,}/)) throw "Invalid wildcard pattern '" + watchPattern + "'";
+                    var matcher = watchPattern
+                        .replace(/\*{2}/g, '.*')
+                        .replace(/\*{1}/g, '[^:/.?_&;]*')
+                        .replace(/\./, '.*');
+                    return new RegExp('^' + matcher);
                 }
-
-                /**
-                 * --------------------------------------------
-                 * Removes a listener by calling its de-register function
-                 * --------------------------------------------
-                 *
-                 */
-
-                function removeListener(eventName) {
-
-                    var reRegisterFunction = listeners[eventName];
-
-                    $log(reRegisterFunction.toString());
-
-                    if (typeof reRegisterFunction === 'function') {
-                        reRegisterFunction();
-                        listeners[eventName] = null;
-                        $log(reRegisterFunction.toString());
-                    }
-
-                }
-
-
-                /**
-                 * --------------------------------------------
-                 * adds function to eventName array
-                 * --------------------------------------------
-                 *
-                 */
-
-                function addActor(eventName, fn) {
-
-                    // check for an actors array of functions for this eventName
-                    // if not, create one
-                    var namedActors = actors[eventName];
-
-                    if (!namedActors) actors[eventName] = namedActors = [];
-
-                    // now push our actor function
-                    namedActors.push(fn);
-
-                    //$log('registering actor for ' + eventName, namedActors);
-                    //$log('there are now ', namedActors.length, ' actors for this event')
-
-                }
-
-                /**
-                 * --------------------------------------------
-                 * Public interface methods
-                 * --------------------------------------------
-                 *
-                 */
 
                 var PublicInterface = {
                     listen: function(eventName) {
-                        // this will make eventName available in
-                        // the function chain
-                        _eventName = eventName;
-
-                        addListener(_eventName);
-
-                        // chainable
+                        addListener(eventName);
                         return PublicInterface;
                     },
                     unlisten: function(eventName) {
@@ -406,10 +183,8 @@ angular
                     },
                     act: function(fn) {
                         addActor(_eventName, fn);
-
-                        // chainable
                         return PublicInterface;
-                    },
+                    }
                 };
 
                 return PublicInterface;

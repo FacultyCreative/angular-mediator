@@ -9,7 +9,7 @@ var mediatorMock = {
     },
     getPayloadTest: function() {
         return function(event, payload) { 
-            return mediatorMock.respond(event.name, payload);
+            return mediatorMock.respond(event, payload);
         }
     },
     respond: function(variable1, variable2) {
