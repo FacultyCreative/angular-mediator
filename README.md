@@ -32,29 +32,29 @@ function). The mediator listens for events from the other modules, and knows how
 module to do its job at the right time, so that our user receives their email:
 
 ```
-     angular.module('application', [])
-          .factory('ApplicationLogic', [
-              'Mediator', 'Order', 'Invoice', 'Email', 'Notification',
-                  function(Mediator, Order, Invoice, Email, Notification) {
-                      
-                      Mediator.listen('order:instantiation:success').act(function(event, order) {
-                          new Invoice(order);
-                      });
+angular.module('application', [])
+     .factory('ApplicationLogic', [
+         'Mediator', 'Order', 'Invoice', 'Email', 'Notification',
+             function(Mediator, Order, Invoice, Email, Notification) {
+                 
+                 Mediator.listen('order:instantiation:success').act(function(event, order) {
+                     new Invoice(order);
+                 });
 
-                      Mediator.listen('invoice:instantiation:success').act(function(event, invoice) {
-                          var email = new Email(invoice);
-                          email.send();
-                      });
+                 Mediator.listen('invoice:instantiation:success').act(function(event, invoice) {
+                     var email = new Email(invoice);
+                     email.send();
+                 });
 
-                      Mediator.listen('email:send:success').act(function(event, email) {
-                          var address = email.address;
-                          new Notification("Your invoice has been sent to " + address);
-                      });
+                 Mediator.listen('email:send:success').act(function(event, email) {
+                     var address = email.address;
+                     new Notification("Your invoice has been sent to " + address);
+                 });
 
-                      Mediator.listen('email:send:failure').act(function(event, error) {
-                          new Notification("There was an error sending your email, " + error);
-                      });
-                  }]);
+                 Mediator.listen('email:send:failure').act(function(event, error) {
+                     new Notification("There was an error sending your email, " + error);
+                 });
+             }]);
 ```
 
 With the Mediator approach, we're now free to drop our Email or Notification class into
@@ -64,11 +64,11 @@ our dependencies in a separate module, the mediator, to maximize reuse of our co
 In the example above, our classes would only be responsible for one thing, knowing that
 they need to send updates. Thanks to Angular, they need not know to where:
 ```
-     function Order(itemId, userId) {
-         this.itemId = itemId;
-         this.userId = userId;
-         $rootScope.$broadcast('order:instantiation:success');
-     }
+function Order(itemId, userId) {
+    this.itemId = itemId;
+    this.userId = userId;
+    $rootScope.$broadcast('order:instantiation:success');
+}
 ```
 Since modules should not interface directly, and the $broadcast hierarchy
 can be disturbed by isolate scopes, we recommend placing the mediator on the
@@ -84,30 +84,32 @@ The mediator provides a few simple methods for registering events & actions.
 
 ### Listen / Act
 ```
-      Mediator.listen(eventName).act(function(event, payload) {});
+Mediator.listen(eventName).act(function(event, payload) {});
 ```
  Listen accepts regular expressions:
 ```
-      Mediator.listen(/success$/).act(notifier.notify(event, payload));
-      Mediator.listen(/^user/).act(currentUser.update(event, payload));
+Mediator.listen(/success$/).act(notifier.notify(event, payload));
+Mediator.listen(/^user/).act(currentUser.update(event, payload));
 ```
  Listen also accepts string names featuring a wildcard matcher (*) and globstar matcher (**).
 
  The wildcard matcher matches any string not split by a separator. The list of separators
  is colon (:), backslash (/), period (.), question mark (?), underscore (_), 
  ampersand (&), and semi-colon (;)
- ```
-      Mediator.listen('*:success').act(notifier.notify(event, payload));
+```
+Mediator.listen('*:success').act(notifier.notify(event, payload));
 ```
  Would match: `login:success` but not `user:login:success`
 
  The globstar matcher matches recursively through any chain of separators:
 ```
-     Mediator.listen('**:success')
+Mediator.listen('**:success')
 ```
 Would match `login:success` and `user:login:success`
- * ### Unlisten
- * Unlisten could be called by a callback function (e.g. an event should only happen
- * once, and then stop being listened for)
- *
- *      Mediator.unlisten(eventName);
+
+### Unlisten
+Unlisten could be called by a callback function (e.g. an event should only happen
+once, and then stop being listened for)
+```
+Mediator.unlisten(eventName);
+```
