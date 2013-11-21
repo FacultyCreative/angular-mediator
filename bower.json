@@ -14,7 +14,10 @@
     "wildcard",
     "globstar",
     "regex",
-    "pattern"
+    "pattern",
+    "broadcast",
+    "event",
+    "listener"
   ],
   "license": "MIT",
   "ignore": [
