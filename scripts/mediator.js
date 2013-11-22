@@ -14,20 +14,20 @@
  *
  * The Mediator encapsulates application-specific logic. It knows how to respond to
  * events within a given application by calling the APIs of the other modules. It
- * sequesters away dependencies within itself, so that modules and classes have 
+ * sequesters away dependencies within itself, so that modules and classes have
  * as few dependencies as possible.
  *
  * ## Example:
  *
- * Let's build an app with an Order class, representing an online order; an Invoice class 
+ * Let's build an app with an Order class, representing an online order; an Invoice class
  * that creates invoices; an Email class that sends emails; and a Notification class that
  * provides users with many types of interesting updates in a Growl-like fashion.
- * 
- * An Order could be responsible for instantiating a new invoice, sending off 
- * an email and notifying the user of success or failure, or the Email class could have a 
- * very specific Email.sendShippingLabelAndNotify() function. But both of these approaches 
- * require our classes to know too much about the functionality of other classes. They 
- * tightly couple dependencies, and render us unable to drop our classes into new projects 
+ *
+ * An Order could be responsible for instantiating a new invoice, sending off
+ * an email and notifying the user of success or failure, or the Email class could have a
+ * very specific Email.sendShippingLabelAndNotify() function. But both of these approaches
+ * require our classes to know too much about the functionality of other classes. They
+ * tightly couple dependencies, and render us unable to drop our classes into new projects
  * with few or no changes.
  *
  * The Mediator approach instead encapsulates our application-specific logic within the single
@@ -39,7 +39,7 @@
  *          .factory('ApplicationLogic', [
  *              'Mediator', 'Order', 'Invoice', 'Email', 'Notification',
  *                  function(Mediator, Order, Invoice, Email, Notification) {
- *                      
+ *
  *                      Mediator.listen('order:instantiation:success').act(function(event, order) {
  *                          new Invoice(order);
  *                      });
@@ -58,7 +58,7 @@
  *                          new Notification("There was an error sending your email, " + error);
  *                      });
  *                  }]);
- * 
+ *
  * With the Mediator approach, we're now free to drop our Email or Notification class into
  * another application right away and start emailing and notifying. In this way we've isolated
  * our dependencies in a separate module, the mediator, to maximize reuse of our code.
@@ -85,7 +85,7 @@
  * The mediator provides a few simple methods for registering events & actions.
  *
  * ### Listen / Act
- * 
+ *
  *      Mediator.listen(eventName).act(function(event, payload) {});
  *
  * Listen accepts regular expressions:
@@ -96,9 +96,9 @@
  * Listen also accepts string names featuring a wildcard matcher (*) and globstar matcher (**).
  *
  * The wildcard matcher matches any string not split by a separator. The list of separators
- * is colon (:), backslash (/), period (.), question mark (?), underscore (_), 
+ * is colon (:), backslash (/), period (.), question mark (?), underscore (_),
  * ampersand (&), and semi-colon (;)
- * 
+ *
  *      Mediator.listen('*:success').act(notifier.notify(event, payload));
  *
  * Would match: `login:success` but not `user:login:success`
@@ -126,45 +126,72 @@ angular
             function($rootScope) {
 
                 var listeners = [];
-                var actors = {};
+                var actors = [];
                 var _eventName;
-                var $broadcast = angular.copy($rootScope.$broadcast);
-                var $emit      = angular.copy($rootScope.$emit);
+
+                /**
+                 * Registers and event for listening by mediator
+                 * @param eventName {String|RegExp} Strings will be converted to RegExp for storage
+                 *
+                 */
 
                 function addListener(eventName) {
-                    if (eventName.constructor == String) eventName = wildcardify(eventName);
+                    if (eventName.constructor == String) eventName = regexify(eventName);
                     if (eventName.constructor == RegExp) listeners.push(eventName);
                     _eventName = eventName;
                 }
 
+                /**
+                 * Removes specified eventName from listeners array. Will not effect actors for evenName
+                 * @param {String|RegExp} eventName Event to stop listening for
+                 *
+                 */
+
                 function removeListener(eventName) {
-                    if (eventName.constructor == String) eventName = wildcardify(eventName);
-                    listeners = pk.withoutRegex(listeners, eventName);
+                    if (eventName.constructor == String) eventName = regexify(eventName);
+                    listeners = _.reject(listeners, function(listener) {
+                        if (listener.toString() === eventName.toString()) return listener;
+                    });
                 }
+
+                /**
+                 * Adds function for specified event name.
+                 */
 
                 function addActor(eventName, fn) {
                     if (!actors[eventName]) actors[eventName] = [];
                     actors[eventName].push(fn);
                 }
 
-                $rootScope.$emit = function(name, args) {
-                    callWildcards(name, args);
-                    return $emit.call(this, name, args);
-                };
+                /**
+                 * Call actors for an event name. Matches each listener against RegEx event name,
+                 * if a match is found, iterates though actors array where key matches event name
+                 * and calls each actor function, passing original event and args.
+                 * @param {String} name Name of event called with #broadcast or #emit
+                 * @param {<Anything!>} args Original event args sent with event
+                 *
+                 */
 
-                $rootScope.$broadcast = function(name, args) {
-                    callWildcards(name, args);
-                    return $broadcast.call($rootScope, name, args);
-                };
-
-                function callWildcards(name, args) {
+                function callRegexes() {
+                    var args = _.flatten(arguments);
+                    var name = args[0];
                     _.each(listeners, function(listener) {
-                        if (name.match(listener)) _.each(actors[listener], function(actor) { actor(name, args); });
+                        if (name.match(listener)) {
+                            _.each(actors[listener], function(actor) {
+                                actor.apply(actor, args);
+                            });
+                        }
                     });
                 }
 
-                function wildcardify(watchPattern) {
-                    if (watchPattern.match(/\*{3,}/)) throw "Invalid wildcard pattern '" + watchPattern + "'";
+                /**
+                 * Convert wildcard (*) and globstar (**) pattern strings to RegExp
+                 * @returns {RegExp}
+                 *
+                 */
+
+                function regexify(watchPattern) {
+                    if (watchPattern.match(/\*{3,}/)) throw 'Invalid wildcard pattern "' + watchPattern + '"';
                     var matcher = watchPattern
                         .replace(/\*{2}/g, '.*')
                         .replace(/\*{1}/g, '[^:/.?_&;]*')
@@ -172,6 +199,49 @@ angular
                     return new RegExp('^' + matcher);
                 }
 
+                /**
+                 * To fully support wildcard listeners, we need to hook into angular's $boardcast and $emit
+                 * events. We don't want to override them - we just add a wildcard check and them
+                 * call them using .call(this) to ensure proper context.
+                 *
+                 * Because all scopes inherit from $rootScope, even child scopes that $emit()
+                 * are addressed with $rootScope.$emit
+                 *
+                 */
+                var $broadcast = angular.copy($rootScope.$broadcast);
+                var $emit = angular.copy($rootScope.$emit);
+
+
+                $rootScope.$emit = function(name, args) {
+                    callRegexes(arguments);
+                    return $emit.apply(this, arguments);
+                };
+
+                $rootScope.$broadcast = function(name, args) {
+                    callRegexes(arguments);
+                    return $broadcast.apply(this, arguments);
+                };
+
+                /**
+                 * PublicInterface exposes methods for interacting with mediator
+                 *
+                 * @method listen
+                 * @param {String} eventName String or RegEx event to register with mediator
+                 * @chainable
+                 *
+                 *
+                 * @method unlisten
+                 * @param {String} eventName String or RegEx to stop listening for. Will no longer
+                 *     call registered actors (but will not remove actors)
+                 * @chainable
+                 *
+                 *
+                 * @method act
+                 * @param {Function} fn Function called when #broadcast(event, args)
+                 *    or #emit(event, args) event.name matches the eventName specified in listen(eventName)
+                 * @chainable
+                 *
+                 */
                 var PublicInterface = {
                     listen: function(eventName) {
                         addListener(eventName);
