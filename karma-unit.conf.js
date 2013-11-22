@@ -13,7 +13,6 @@ module.exports = function(config) {
       // ------------------------------
       // DEPENDENCIES  
       // ------------------------------
-      'bower_components/pocketknife/pocketknife.js',
       'bower_components/jquery/jquery.min.js',
       'bower_components/angular/angular.js',
       'bower_components/angular-mocks/angular-mocks.js',
