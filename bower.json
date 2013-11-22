@@ -5,6 +5,7 @@
     "Matt Miller <matt@facultycreative.com>",
     "Brett Shollenberger <brett@facultycreative.com>"
   ],
+  "repository": "git@github.com:FacultyCreative/angular-mediator.git",
   "description": "Mediator pattern machine featuring wildcard matching, globstar matching, and regular expression pattern matching",
   "main": "scripts/mediator.js",
   "keywords": [
