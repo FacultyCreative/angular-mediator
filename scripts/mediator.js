@@ -118,8 +118,8 @@
  */
 
 angular
-    .module('lsMediator', [])
-    .provider('lsMediator', function() {
+    .module('angularMediator', [])
+    .provider('angularMediator', function() {
 
         this.$get = [
             '$rootScope',
