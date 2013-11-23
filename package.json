@@ -1,6 +1,6 @@
 {
   "name": "Mediator.js",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "dependencies": {
     "bower": "~1.2.6",
     "grunt": "~0.4.1",
